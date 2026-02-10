@@ -11,10 +11,10 @@ log.info(f"output directory set to '{out}'")
 session, captures = drive()
 g = session.get
 
-for i, capture in enumerate(captures, start = 1):
+for i, capture in enumerate(captures, start=1):
     log.info(f"started fetch {i} of {len(captures)}...")
 
-    if not (slug := capture.get("url", "")):
+    if not (slug := capture.get("url", None)):
         log.warning("failed to find slug; skipped")
         continue
 
@@ -28,7 +28,7 @@ for i, capture in enumerate(captures, start = 1):
 
     h = metadata.get
 
-    if not (products := h("info", {}).get("products", [])):
+    if not (products := h("info", None).get("products", None)):
         log.warning("failed to fetch products via API (not found); skipped")
         continue
 

@@ -36,7 +36,11 @@ def download(session: Session, url: str, path: Path) -> None:
         response = session.get(url, stream=True)
         response.raise_for_status()
 
-        total = int(response.headers.get("content-length", 0))
+        if not (total := response.headers.get("content-length")):
+            log.error("failed to fetch content length; skipped")
+            return
+
+        total = int(total)
         block = 1 << 20
 
         with tqdm(total=total, unit="B", unit_scale=True, leave=False) as bar:
