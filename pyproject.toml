@@ -14,7 +14,7 @@ build-backend = "uv_build"
 module-name = ["leccaper"]
 
 [project.scripts]
-leccaper = "leccaper:__main__"
+leccaper = "leccaper:cli"
 
 [tool.basedpyright]
 include = ["src"]
