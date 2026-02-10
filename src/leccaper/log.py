@@ -1,5 +1,5 @@
-from logging import basicConfig, getLogger, INFO
 from collections.abc import Callable
+from logging import INFO, basicConfig, getLogger
 from typing import NoReturn
 
 basicConfig(level=INFO, format="[%(levelname)s] %(message)s")
