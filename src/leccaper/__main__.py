@@ -11,8 +11,8 @@ log.info(f"output directory set to '{out}'")
 session, captures = drive()
 g = session.get
 
-for i, capture in enumerate(captures):
-    log.info(f"started fetch {i + 1} of {len(captures)}...")
+for i, capture in enumerate(captures, start = 1):
+    log.info(f"started fetch {i} of {len(captures)}...")
 
     if not (slug := capture.get("url", "")):
         log.warning("failed to find slug; skipped")
@@ -37,7 +37,7 @@ for i, capture in enumerate(captures):
         continue
 
     target = f"https:{h('mediaPrefix')}{h('sitekey')}/{tag}.mp4"
-    download(session, target, out / f"{i + 1}.mp4")
+    download(session, target, out / f"{i}.mp4")
 
     log.info("video download successful!")
     log.info("fetch for subtitles started...")
@@ -48,7 +48,7 @@ for i, capture in enumerate(captures):
 
     try:
         if (subtitles := g(f"{leccap}/player/api/webvtt/?rk={key}")).status_code == 200:
-            with (out / f"{i + 1}.vtt").open("w") as f:
+            with (out / f"{i}.vtt").open("w") as f:
                 _ = f.write(subtitles.text)
                 log.info("subtitle download successful!")
     except Exception:
