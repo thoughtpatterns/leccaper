@@ -1,14 +1,15 @@
 from leccaper.log import log
-from leccaper.util import download, drive, input, leccap
-from pathlib import Path
+from leccaper.util import download, drive, leccap, options
 
-# pyright: reportAny=false
+# pyright: reportAny=false, reportUnknownMemberType=false, reportUnknownVariableType=false
 
-out = Path.cwd() / "leccaper" / input("enter a name for the output directory... ")
-out.mkdir(parents=True, exist_ok=True)
-log.info(f"output directory set to '{out}'")
+path, number = options()
+path.mkdir(parents=True, exist_ok=True)
 
 session, captures = drive()
+if number:
+    captures = captures[-number:]
+
 g = session.get
 
 for i, capture in enumerate(captures, start=1):
@@ -37,7 +38,7 @@ for i, capture in enumerate(captures, start=1):
         continue
 
     target = f"https:{h('mediaPrefix')}{h('sitekey')}/{tag}.mp4"
-    download(session, target, out / f"{i}.mp4")
+    download(session, target, path / f"{i}.mp4")
 
     log.info("video download successful!")
     log.info("fetch for subtitles started...")
@@ -48,11 +49,11 @@ for i, capture in enumerate(captures, start=1):
 
     try:
         if (subtitles := g(f"{leccap}/player/api/webvtt/?rk={key}")).status_code == 200:
-            with (out / f"{i}.vtt").open("w") as f:
+            with (path / f"{i}.vtt").open("w") as f:
                 _ = f.write(subtitles.text)
                 log.info("subtitle download successful!")
-    except Exception:
-        log.warning("failed to get subtitles; skipped")
+    except Exception as e:
+        log.warning(f"failed to get subtitles: {e}; skipped")
         pass
 
 log.info("all downloads complete!")

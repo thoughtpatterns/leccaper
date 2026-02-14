@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from builtins import input as _input
 from collections.abc import Callable
 from json import JSONDecodeError, loads
@@ -27,9 +28,14 @@ class Drive(NamedTuple):
     captures: list[Ds]
 
 
+class Options(NamedTuple):
+    path: Path
+    number: int | None
+
+
 def download(session: Session, url: str, path: Path) -> None:
     if path.exists():
-        log.info(f"will not download '{path.name}', as it already exists")
+        log.info(f"will not download to existing path, '{path.name}'")
         return
 
     try:
@@ -79,6 +85,14 @@ def drive() -> Drive:
 
     driver.quit()
     return Drive(session, captures)
+
+
+def options() -> Options:
+    parser = ArgumentParser(prog="leccaper", description="a download tool for leccap")
+    _ = parser.add_argument("-n", "--number", default=None, type=int, help="number of lectures to save, from latest")
+    _ = parser.add_argument("path", type=Path, help="directory in which to save lecture captures")
+    options = parser.parse_args()
+    return Options(options.path, options.number)  # pyright: ignore[reportAny]
 
 
 def read(html: str) -> list[Ds]:
