@@ -21,6 +21,9 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            dash
+            fdupes
+            ffmpeg
             python
             uv
           ];
@@ -32,6 +35,8 @@
 
             unset VIRTUAL_ENV
             . .venv/bin/activate
+
+            export PATH="$(realpath ./bin):$PATH"
           '';
         };
       }

@@ -1,0 +1,83 @@
+#!/usr/bin/env -S dash -eu
+
+readonly root="${0%/*}"
+
+preset0() { readonly hi='32' ; readonly lo='160' ; readonly frac='0.0001' ; }
+preset1() { readonly hi='64' ; readonly lo='320' ; readonly frac='0.0010' ; }
+preset2() { readonly hi='64' ; readonly lo='600' ; readonly frac='0.0050' ; }
+preset3() { readonly hi='80' ; readonly lo='800' ; readonly frac='0.0500' ; }
+
+die() { error "$@" ; exit 1 ; }
+
+error()
+{
+	if [ "$#" -eq 1 ]
+	then printf 'fatal: %s\n' "$1" >&2
+	else printf "fatal: $@" >&2
+	fi
+}
+
+usage()
+{
+	cat <<- EOF
+		usage: vf [<options>] INPUT OUTPUT
+		options:
+		  -d DELTA,  --delta DELTA   frame threshold, ∈ [0,1]                                 default := '0.01'
+		  -p PRESET, --preset PRESET clone prune preset, ∈ ℤ ∩ [0,3]; preset number ∝ prunes  default := '2'
+		  -w WIDTH,  --width WIDTH   crop width; assumes full height, from left of input      default := 'iw/2'
+		  -h,        --help          print this message and exit
+	EOF
+}
+
+vfa()
+{
+	local vfa="${width-'crop=iw/2:ih:0:0'},"
+	      vfa="${vfa}hqdn3d=0:0:6:6,"
+	      vfa="${vfa}select='gt(scene,${delta-0.01})+eq(n,0)',"
+	      vfa="${vfa}mpdecimate=hi=$hi:lo=$lo:frac=$frac"
+
+	printf %s "$vfa"
+}
+
+while [ "$#" -gt 0 ] && [ "${1-}" != "${1#-}" ]
+do
+	case "$1" in
+	('-d'|'--delta')
+		if [ "$#" -lt 2 ]
+		then usage ; exit 1
+		else readonly delta="$2" ; shift
+		fi ;;
+	('-p'|'--preset')
+		if [ "$#" -lt 2 ]
+		then usage ; exit 1
+		fi
+
+		case "$2" in
+		([0-3]) eval "preset$2" ;;
+		(*) error "unrecognized preset '$1'" ; usage ; exit 1 ;;
+		esac
+
+		shift ;;
+	('-w'|'--width')
+		if [ "$#" -lt 2 ]
+		then usage ; exit 1
+		else readonly width="crop=$2:ih:0:0" ; shift
+		fi ;;
+	('-h'|'--help') usage ; exit 0 ;;
+	(*) error "unrecognized switch '$1'" ; usage ; exit 1 ;;
+	esac
+
+	shift
+done
+
+if [ "$#" -ne 2 ]
+then usage ; exit 1
+fi
+
+if [ -z "${hi-}" ]
+then preset2
+fi
+
+readonly input="$1" ; readonly output="$2" ; mkdir -p "$output"
+
+ffmpeg -i "$input" -vsync 0 -vf "$(vfa)" "$output/%d.png"
