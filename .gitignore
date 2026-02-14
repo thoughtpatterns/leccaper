@@ -9,3 +9,7 @@ wheels/
 # Virtual environments.
 .direnv
 .venv
+
+# Other files.
+.media/
+media/
