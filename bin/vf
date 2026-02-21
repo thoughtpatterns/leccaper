@@ -16,8 +16,6 @@
 # which appears in mine :-). 'hi' is set to prevent the laser pointer from "forcing" a duplicate, via rule (1); it
 # probably shouldn't be tuned.
 
-readonly root="${0%/*}"
-
 check()
 {
 	if [ "$1" -lt 2 ]
@@ -69,7 +67,7 @@ if [ "$#" -ne 2 ]
 then usage ; exit 1
 fi
 
-readonly input="$(realpath "$1")" output="$(realpath "$2")" # TODO: explain `realpath`.
-readonly vf="crop=${width-'iw/2'}:ih:0:0,fps=1,hqdn3d=0:0:6:6,mpdecimate=hi=${hi-'10000'}:lo=${lo-'3000'}:frac=${frac-'0.01'}"
+readonly input="$1" output="$2"
+readonly vf="crop=${width-iw/2}:ih:0:0,fps=1,hqdn3d=0:0:6:6,mpdecimate=hi=${hi-10000}:lo=${lo-3000}:frac=${frac-0.01}"
 
 mkdir -p "$output" ; ffmpeg -loglevel 'error' -stats -i "$input" -fps_mode 'passthrough' -vf "$vf" "$output/%d.png"

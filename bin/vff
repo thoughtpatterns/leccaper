@@ -1,7 +1,5 @@
 #!/usr/bin/env -S dash -eu
 
-readonly root="${0%/*}"
-
 die() { error "$@" ; exit 1 ; }
 
 error()
