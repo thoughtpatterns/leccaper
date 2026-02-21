@@ -2,10 +2,15 @@
 
 readonly root="${0%/*}"
 
-preset0() { readonly hi='32' ; readonly lo='160' ; readonly frac='0.0001' ; }
-preset1() { readonly hi='64' ; readonly lo='320' ; readonly frac='0.0010' ; }
-preset2() { readonly hi='64' ; readonly lo='600' ; readonly frac='0.0050' ; }
-preset3() { readonly hi='80' ; readonly lo='800' ; readonly frac='0.0500' ; }
+# preset0() { readonly hi='32' ; readonly lo='160' ; readonly frac='0.0001' ; }
+# preset1() { readonly hi='64' ; readonly lo='320' ; readonly frac='0.0010' ; }
+# preset2() { readonly hi='64' ; readonly lo='600' ; readonly frac='0.0050' ; }
+# preset3() { readonly hi='80' ; readonly lo='800' ; readonly frac='0.0500' ; }
+
+preset0() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0005' ; }
+preset1() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0020' ; }
+preset2() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0050' ; }
+preset3() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0100' ; }
 
 die() { error "$@" ; exit 1 ; }
 
@@ -17,26 +22,19 @@ error()
 	fi
 }
 
+ff() { ffmpeg -hide_banner -loglevel 'error' -stats -i "$1" -fps_mode 'passthrough' -vf "$2" "$3" ; }
+
 usage()
 {
 	cat <<- EOF
 		usage: vf [<options>] INPUT OUTPUT
 		options:
-		  -d DELTA,  --delta DELTA   frame threshold, ∈ [0,1]                                 default := '0.01'
-		  -p PRESET, --preset PRESET clone prune preset, ∈ ℤ ∩ [0,3]; preset number ∝ prunes  default := '2'
+		  -d DELTA,  --delta DELTA   frame threshold, ∈ [0,1]                                 default := '0.0005'
+		  -p PRESET, --preset PRESET clone prune preset, ∈ ℤ ∩ [0,3]; preset number ∝ prunes  default := '1'
 		  -w WIDTH,  --width WIDTH   crop width; assumes full height, from left of input      default := 'iw/2'
+		  -D PATH,   --debug PATH    save rejected frames to PATH, to test false negatives
 		  -h,        --help          print this message and exit
 	EOF
-}
-
-vfa()
-{
-	local vfa="${width-'crop=iw/2:ih:0:0'},"
-	      vfa="${vfa}hqdn3d=0:0:6:6,"
-	      vfa="${vfa}select='gt(scene,${delta-0.01})+eq(n,0)',"
-	      vfa="${vfa}mpdecimate=hi=$hi:lo=$lo:frac=$frac"
-
-	printf %s "$vfa"
 }
 
 while [ "$#" -gt 0 ] && [ "${1-}" != "${1#-}" ]
@@ -45,8 +43,9 @@ do
 	('-d'|'--delta')
 		if [ "$#" -lt 2 ]
 		then usage ; exit 1
-		else readonly delta="$2" ; shift
-		fi ;;
+		fi
+
+		readonly delta="$2" ; shift ;;
 	('-p'|'--preset')
 		if [ "$#" -lt 2 ]
 		then usage ; exit 1
@@ -54,15 +53,22 @@ do
 
 		case "$2" in
 		([0-3]) eval "preset$2" ;;
-		(*) error "unrecognized preset '$1'" ; usage ; exit 1 ;;
+		(*) error "unrecognized preset '$2'" ; usage ; exit 1 ;;
 		esac
 
 		shift ;;
 	('-w'|'--width')
 		if [ "$#" -lt 2 ]
 		then usage ; exit 1
-		else readonly width="crop=$2:ih:0:0" ; shift
-		fi ;;
+		fi
+
+		readonly width="crop=$2:ih:0:0" ; shift ;;
+	('-D'|'--debug')
+		if [ "$#" -lt 2 ]
+		then usage ; exit 1
+		fi
+
+		readonly debug="$2" ; shift ;;
 	('-h'|'--help') usage ; exit 0 ;;
 	(*) error "unrecognized switch '$1'" ; usage ; exit 1 ;;
 	esac
@@ -75,9 +81,16 @@ then usage ; exit 1
 fi
 
 if [ -z "${hi-}" ]
-then preset2
+then preset1
 fi
 
-readonly input="$1" ; readonly output="$2" ; mkdir -p "$output"
+readonly input="$1" ; readonly output="$2"
 
-ffmpeg -i "$input" -vsync 0 -vf "$(vfa)" "$output/%d.png"
+readonly vf0="${width-'crop=iw/2:ih:0:0'},fps=1,hqdn3d=0:0:6:6"
+readonly vf3="mpdecimate=hi=$hi:lo=$lo:frac=$frac"
+
+mkdir -p "$output" ; ff "$input" "$vf0,$vf3" "$output/%d.png"
+
+if [ -n "${debug-}" ]
+then mkdir -p "$debug" ; ff "$input" "$vf0,$vf3" "$debug/%d.png"
+fi
