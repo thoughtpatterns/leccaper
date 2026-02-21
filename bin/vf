@@ -38,7 +38,8 @@ error()
 usage()
 {
 	# This used to be `>&2 cat <<- EOF ⋯`, but that would miraculously _not_ work _if_ the heredoc had at least
-	# five lines. It seems to be a relatively obscure `dash` bug :-).
+	# five lines. It seems to be a relatively obscure `dash` bug :-) (or I've missed something obvious, which is
+	# more likely).
 	printf %s "
 		usage: vf [<OPTIONS>] INPUT OUTPUT
 		options:
@@ -71,4 +72,4 @@ fi
 readonly input="$1" output="$2"
 readonly vf="crop=${width-'iw/2'}:ih:0:0,fps=1,hqdn3d=0:0:6:6,mpdecimate=hi=${hi-'10000'}:lo=${lo-'3000'}:frac=${frac-'0.01'}"
 
-mkdir -p "${1%/*}" ; ffmpeg -loglevel 'error' -stats -i "$input" -fps_mode 'passthrough' -vf "$vf" "$output/%d.png"
+mkdir -p "$output" ; ffmpeg -loglevel 'error' -stats -i "$input" -fps_mode 'passthrough' -vf "$vf" "$output/%d.png"
