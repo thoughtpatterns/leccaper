@@ -1,21 +1,16 @@
 #!/usr/bin/env -S dash -eu
 
-die() { error "$@" ; exit 1 ; }
-
-error()
-{
-	if [ "$#" -eq 1 ]
-	then printf 'fatal: %s\n' "$1" >&2
-	else printf "fatal: $@" >&2
-	fi
-}
-
 usage() { printf '%s\n' 'usage: vff INPUT OUTPUT [<OPTIONS>]'; }
+
+if [ "$#" -ne 2 ]
+then usage ; exit 1
+fi
 
 readonly input="$1" output="$2" ; shift 2
 
 for video in "$input/"*.mp4
 do
 	base="$output/${video##*/}" ; stem="${base%.mp4}"
+	if [ -d "$stem" ] ; then continue ; fi
 	vf "$@" "$video" "$stem" ; fdupes "$stem"
 done

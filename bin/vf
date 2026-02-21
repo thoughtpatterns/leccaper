@@ -35,15 +35,15 @@ error()
 
 usage()
 {
-	# This used to be `>&2 cat <<- EOF ⋯`, but that would miraculously _not_ work _if_ the heredoc had at least
+	# This used to be `>&2 cat <<- EOF ...`, but that would miraculously _not_ work _if_ the heredoc had at least
 	# five lines. It seems to be a relatively obscure `dash` bug :-) (or I've missed something obvious, which is
 	# more likely).
 	printf %s "
 		usage: vf [<OPTIONS>] INPUT OUTPUT
 		options:
 		  -i HI,     --hi HI        mpdecimate parameter; see documentation at top of script  default := '10000'
-		  -l LO,     --lo LO        mpdecimate parameter; ⋯                                   default := '3000'
-		  -f FRAC,   --frac FRAC    mpdecimate parameter; ⋯                                   default := '0.01'
+		  -l LO,     --lo LO        mpdecimate parameter; ...                                 default := '3000'
+		  -f FRAC,   --frac FRAC    mpdecimate parameter; ...                                 default := '0.01'
 		  -w WIDTH,  --width WIDTH  crop width; assumes full height, from left of input       default := 'iw/2'
 		  -h,        --help         show this help message and exit
 	" | tail '-c+2' | sed -Ee 's/^\t+//g' >&2
