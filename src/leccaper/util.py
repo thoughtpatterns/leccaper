@@ -30,13 +30,13 @@ class Drive(NamedTuple):
 
 class Options(NamedTuple):
     path: Path
-    number: int | None
+    number: int
 
 
 def download(session: Session, url: str, path: Path) -> None:
     if path.exists():
         log.info(f"will not download to existing path, '{path.name}'")
-        return
+        raise FileExistsError
 
     try:
         response = session.get(url, stream=True)
@@ -89,7 +89,7 @@ def drive() -> Drive:
 
 def options() -> Options:
     parser = ArgumentParser(prog="leccaper", description="a download tool for leccap")
-    _ = parser.add_argument("-n", "--number", default=None, type=int, help="number of lectures to save, from latest")
+    _ = parser.add_argument("-n", "--number", default=1, type=int, help="number of lectures to save, from latest")
     _ = parser.add_argument("path", type=Path, help="directory in which to save lecture captures")
     options = parser.parse_args()
     return Options(options.path, options.number)  # pyright: ignore[reportAny]

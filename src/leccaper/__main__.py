@@ -7,13 +7,14 @@ path, number = options()
 path.mkdir(parents=True, exist_ok=True)
 
 session, captures = drive()
-if number:
-    captures = captures[-number:]
+fetches = len(captures)
+captures = captures[-number:]
+start = fetches - number + 1
 
 g = session.get
 
-for i, capture in enumerate(captures, start=1):
-    log.info(f"started fetch {i} of {len(captures)}...")
+for i, capture in enumerate(captures, start=start):
+    log.info(f"started fetch for capture {i} of {fetches}...")
 
     if not (slug := capture.get("url", None)):
         log.warning("failed to find slug; skipped")
@@ -38,7 +39,11 @@ for i, capture in enumerate(captures, start=1):
         continue
 
     target = f"https:{h('mediaPrefix')}{h('sitekey')}/{tag}.mp4"
-    download(session, target, path / f"{i}.mp4")
+
+    try:
+        download(session, target, path / f"{i}.mp4")
+    except FileExistsError:
+        continue
 
     log.info("video download successful!")
     log.info("fetch for subtitles started...")
