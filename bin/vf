@@ -58,7 +58,7 @@ do
 	('-l'|'--lo')    check "$#" ; readonly lo="$2"    ; shift ;;
 	('-f'|'--frac')  check "$#" ; readonly frac="$2"  ; shift ;;
 	('-w'|'--width') check "$#" ; readonly width="$2" ; shift ;;
-	('-h'|'--help')  usage ; exit 0 ;;
+	('-h'|'--help') usage 2>&1 ; exit 0 ;;
 	(*) error "unrecognized switch '$1'" ; usage ; exit 1 ;;
 	esac
 
@@ -69,7 +69,7 @@ if [ "$#" -ne 2 ]
 then usage ; exit 1
 fi
 
-readonly input="$1" output="$2"
+readonly input="$(realpath "$1")" output="$(realpath "$2")" # TODO: explain `realpath`.
 readonly vf="crop=${width-'iw/2'}:ih:0:0,fps=1,hqdn3d=0:0:6:6,mpdecimate=hi=${hi-'10000'}:lo=${lo-'3000'}:frac=${frac-'0.01'}"
 
 mkdir -p "$output" ; ffmpeg -loglevel 'error' -stats -i "$input" -fps_mode 'passthrough' -vf "$vf" "$output/%d.png"
