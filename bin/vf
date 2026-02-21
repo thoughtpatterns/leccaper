@@ -1,16 +1,29 @@
 #!/usr/bin/env -S dash -eu
 
+# See <https://ffmpeg.org/ffmpeg-filters.html#mpdecimate> for details on 'mpdecimate'. The idea is, a frame may be
+# dropped if,
+#   (1) no 8x8 pixel block has a difference ≥ 'hi', and
+#   (2) fewer than a fraction, 'frac', of blocks, have a difference ≥ 'lo'.
+# Note; I believe that _difference_, here, is simply (r_1 + g_1 + b_1) - (r_2 + g_2 + b_2).
+#
+# The default parameters were tested via refinement on a handful of lectures, to minimize duplication of slides due to
+# laser pointer movement, and to reduce false positives (i.e., to avoid wrongful rejections). Consider the below cases:
+#   (*) If slide transitions are batched (i.e., equations or arrows appear together), we want to _raise_ the number of
+#       blocks to change, to _keep_ a frame; so, reduce 'frac'.
+#   (*) If _many_ laser duplicates appear (in my experience, two or three for a ninety-minute lecture were unavoidable),
+#       then raise 'frac'.
+# Tuning 'lo' may offer finer control; e.g., if the laser pointer in your lecture videos looks different to the one
+# which appears in mine :-). 'hi' is set to prevent the laser pointer from "forcing" a duplicate, via rule (1); it
+# probably shouldn't be tuned.
+
 readonly root="${0%/*}"
 
-# preset0() { readonly hi='32' ; readonly lo='160' ; readonly frac='0.0001' ; }
-# preset1() { readonly hi='64' ; readonly lo='320' ; readonly frac='0.0010' ; }
-# preset2() { readonly hi='64' ; readonly lo='600' ; readonly frac='0.0050' ; }
-# preset3() { readonly hi='80' ; readonly lo='800' ; readonly frac='0.0500' ; }
-
-preset0() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0005' ; }
-preset1() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0020' ; }
-preset2() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0050' ; }
-preset3() { readonly hi='800' ; readonly lo='2400' ; readonly frac='0.0100' ; }
+check()
+{
+	if [ "$1" -lt 2 ]
+	then usage ; exit 1
+	fi
+}
 
 die() { error "$@" ; exit 1 ; }
 
@@ -22,54 +35,29 @@ error()
 	fi
 }
 
-ff() { ffmpeg -hide_banner -loglevel 'error' -stats -i "$1" -fps_mode 'passthrough' -vf "$2" "$3" ; }
-
 usage()
 {
-	cat <<- EOF
-		usage: vf [<options>] INPUT OUTPUT
+	# This used to be `>&2 cat <<- EOF ⋯`, but that would miraculously _not_ work _if_ the heredoc had at least
+	# five lines. It seems to be a relatively obscure `dash` bug :-).
+	printf %s "
+		usage: vf [<OPTIONS>] INPUT OUTPUT
 		options:
-		  -d DELTA,  --delta DELTA   frame threshold, ∈ [0,1]                                 default := '0.0005'
-		  -p PRESET, --preset PRESET clone prune preset, ∈ ℤ ∩ [0,3]; preset number ∝ prunes  default := '1'
-		  -w WIDTH,  --width WIDTH   crop width; assumes full height, from left of input      default := 'iw/2'
-		  -D PATH,   --debug PATH    save rejected frames to PATH, to test false negatives
-		  -h,        --help          print this message and exit
-	EOF
+		  -i HI,     --hi HI        mpdecimate parameter; see documentation at top of script  default := '10000'
+		  -l LO,     --lo LO        mpdecimate parameter; ⋯                                   default := '3000'
+		  -f FRAC,   --frac FRAC    mpdecimate parameter; ⋯                                   default := '0.01'
+		  -w WIDTH,  --width WIDTH  crop width; assumes full height, from left of input       default := 'iw/2'
+		  -h,        --help         show this help message and exit
+	" | tail '-c+2' | sed -Ee 's/^\t+//g' >&2
 }
 
 while [ "$#" -gt 0 ] && [ "${1-}" != "${1#-}" ]
 do
 	case "$1" in
-	('-d'|'--delta')
-		if [ "$#" -lt 2 ]
-		then usage ; exit 1
-		fi
-
-		readonly delta="$2" ; shift ;;
-	('-p'|'--preset')
-		if [ "$#" -lt 2 ]
-		then usage ; exit 1
-		fi
-
-		case "$2" in
-		([0-3]) eval "preset$2" ;;
-		(*) error "unrecognized preset '$2'" ; usage ; exit 1 ;;
-		esac
-
-		shift ;;
-	('-w'|'--width')
-		if [ "$#" -lt 2 ]
-		then usage ; exit 1
-		fi
-
-		readonly width="crop=$2:ih:0:0" ; shift ;;
-	('-D'|'--debug')
-		if [ "$#" -lt 2 ]
-		then usage ; exit 1
-		fi
-
-		readonly debug="$2" ; shift ;;
-	('-h'|'--help') usage ; exit 0 ;;
+	('-i'|'--hi')    check "$#" ; readonly hi="$2"    ; shift ;;
+	('-l'|'--lo')    check "$#" ; readonly lo="$2"    ; shift ;;
+	('-f'|'--frac')  check "$#" ; readonly frac="$2"  ; shift ;;
+	('-w'|'--width') check "$#" ; readonly width="$2" ; shift ;;
+	('-h'|'--help')  usage ; exit 0 ;;
 	(*) error "unrecognized switch '$1'" ; usage ; exit 1 ;;
 	esac
 
@@ -80,17 +68,7 @@ if [ "$#" -ne 2 ]
 then usage ; exit 1
 fi
 
-if [ -z "${hi-}" ]
-then preset1
-fi
+readonly input="$1" output="$2"
+readonly vf="crop=${width-'iw/2'}:ih:0:0,fps=1,hqdn3d=0:0:6:6,mpdecimate=hi=${hi-'10000'}:lo=${lo-'3000'}:frac=${frac-'0.01'}"
 
-readonly input="$1" ; readonly output="$2"
-
-readonly vf0="${width-'crop=iw/2:ih:0:0'},fps=1,hqdn3d=0:0:6:6"
-readonly vf3="mpdecimate=hi=$hi:lo=$lo:frac=$frac"
-
-mkdir -p "$output" ; ff "$input" "$vf0,$vf3" "$output/%d.png"
-
-if [ -n "${debug-}" ]
-then mkdir -p "$debug" ; ff "$input" "$vf0,$vf3" "$debug/%d.png"
-fi
+mkdir -p "${1%/*}" ; ffmpeg -loglevel 'error' -stats -i "$input" -fps_mode 'passthrough' -vf "$vf" "$output/%d.png"

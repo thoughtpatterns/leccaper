@@ -12,7 +12,7 @@ error()
 	fi
 }
 
-usage() { printf '%s\n' 'usage: vff INPUT OUTPUT [<vf options>]'; }
+usage() { printf '%s\n' 'usage: vff INPUT OUTPUT [<VF OPTIONS>]'; }
 
 readonly input="$1" ; readonly output="$2" ; shift 2
 
