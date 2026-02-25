@@ -2,7 +2,7 @@
 
 usage() { printf '%s\n' 'usage: vff INPUT OUTPUT [<OPTIONS>]'; }
 
-if [ "$#" -ne 2 ]
+if [ "$#" -lt 2 ]
 then usage ; exit 1
 fi
 
