@@ -20,7 +20,7 @@ captures = captures[start:end]
 g = session.get
 
 for i, capture in enumerate(captures, start=start):
-    log.info(f"started fetch for capture {i} ({total} total)...")
+    log.info(f"started fetch for capture {i} of {len(captures)}...")
 
     if not (slug := capture.get("url", None)):
         log.warning("failed to find slug; skipped")
