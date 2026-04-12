@@ -7,10 +7,11 @@ otherwise arise.
 
 ## Usage
 
-We require `uv`; `pip` can likely be used, but is untested.
+`leccaper` requires `uv`; `pip` can likely be used, but is untested.
 
 ```bash
-uv venv ; . ./.venv/bin/activate
+uv venv
+. ./.venv/bin/activate
 uv sync
 leccaper
 ```
