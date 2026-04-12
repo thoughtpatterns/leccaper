@@ -10,6 +10,8 @@ from selenium.webdriver import Chrome, ChromeOptions
 from tqdm import tqdm
 from typing import Any, Final, NamedTuple, cast
 
+# pyright: reportAny=false
+
 leccap: Final = "https://leccap.engin.umich.edu/leccap"
 
 type Da = dict[Any, Any]  # pyright: ignore[reportExplicitAny]
@@ -30,7 +32,8 @@ class Drive(NamedTuple):
 
 class Options(NamedTuple):
     path: Path
-    number: int
+    start: int | None
+    end: int | None
 
 
 def download(session: Session, url: str, path: Path) -> None:
@@ -51,9 +54,9 @@ def download(session: Session, url: str, path: Path) -> None:
 
         with tqdm(total=total, unit="B", unit_scale=True, leave=False) as bar:
             with path.open("wb") as f:
-                for data in response.iter_content(block):  # pyright: ignore[reportAny]
-                    _ = bar.update(len(data))  # pyright: ignore[reportAny]
-                    _ = f.write(data)  # pyright: ignore[reportAny]
+                for data in response.iter_content(block):
+                    _ = bar.update(len(data))
+                    _ = f.write(data)
 
     except Exception as e:
         log.error(f"failed to download '{path.name}': {e}; skipped")
@@ -63,7 +66,7 @@ def drive() -> Drive:
     _agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
     f: Callable[[Session], None] = lambda x: x.headers.update({"User-Agent": _agent})
-    g: Callable[[Session, Da], None] = lambda x, y: cast("None", x.cookies.set(y["name"], y["value"]))  # pyright: ignore[reportAny, reportUnknownMemberType]
+    g: Callable[[Session, Da], None] = lambda x, y: cast("None", x.cookies.set(y["name"], y["value"]))  # pyright: ignore[reportUnknownMemberType]
 
     try:
         driver = Chrome(ChromeOptions())
@@ -89,10 +92,18 @@ def drive() -> Drive:
 
 def options() -> Options:
     parser = ArgumentParser(prog="leccaper", description="a download tool for leccap")
-    _ = parser.add_argument("-n", "--number", default=1, type=int, help="number of lectures to save, from latest")
+    _ = parser.add_argument("-r", "--range", help="lecture range, as slice; e.g., '0:3' for 0–2, '-5:' for last 5")
     _ = parser.add_argument("path", type=Path, help="directory in which to save lecture captures")
-    options = parser.parse_args()
-    return Options(options.path, options.number)  # pyright: ignore[reportAny]
+    args = parser.parse_args()
+
+    if args.range:
+        if ":" not in args.range:
+            die("range not specified as slice")
+        start, end = map(lambda x: int(x) if x else None, args.range.split(":", 1))
+    else:
+        start, end = None, None
+
+    return Options(args.path, start, end)
 
 
 def read(html: str) -> list[Ds]:
