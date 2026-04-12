@@ -1,9 +1,7 @@
 # leccaper
 
-A University of Michigan lecture capture download tool, derivative of
-[`leccapdl`](https://github.com/brenfwd/leccapdl). We use less automation on the
-navigation to the lecture capture page, to avoid some race conditions which can
-otherwise arise.
+A University of Michigan lecture capture download tool, forked from
+[`leccapdl`](https://github.com/brenfwd/leccapdl).
 
 ## Usage
 
