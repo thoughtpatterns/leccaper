@@ -92,7 +92,7 @@ def drive() -> Drive:
 
 def options() -> Options:
     parser = ArgumentParser(prog="leccaper", description="a download tool for leccap")
-    _ = parser.add_argument("-r", "--range", help="lecture range, as slice; e.g., '0:3' for 0–2, '-5:' for last 5")
+    _ = parser.add_argument("-r", "--range", help="lecture range, as slice; e.g., '1:4' for 1–3, '-5:' for last 5")
     _ = parser.add_argument("path", type=Path, help="directory in which to save lecture captures")
     args = parser.parse_args()
 
