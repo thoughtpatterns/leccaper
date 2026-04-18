@@ -14,8 +14,7 @@ uv sync
 leccaper
 ```
 
-See `leccaper --help` for usage; the default is to download only the newest
-lecture for a course.
+See `leccaper --help` for usage.
 
 ## vf, vff
 
