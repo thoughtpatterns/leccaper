@@ -12,13 +12,23 @@
       nixpkgs,
       flake-utils,
     }:
-    flake-utils.lib.eachDefaultSystem (
+    {
+      overlays.default = final: _: {
+        leccaper = self.packages.${final.stdenv.hostPlatform.system}.leccaper;
+      };
+    }
+    // flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
         python = pkgs.python314;
       in
       {
+        packages = rec {
+          default = leccaper;
+          leccaper = pkgs.callPackage ./package.nix { src = self; };
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             dash
