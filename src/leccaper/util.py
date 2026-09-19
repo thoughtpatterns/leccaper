@@ -3,10 +3,12 @@ from builtins import input as _input
 from collections.abc import Callable
 from json import JSONDecodeError, loads
 from leccaper.log import die, log
+from os import environ
 from pathlib import Path
 from re import DOTALL, Match, compile
 from requests import Session
 from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver.chrome.service import Service
 from tqdm import tqdm
 from typing import Any, Final, NamedTuple, cast
 
@@ -52,11 +54,10 @@ def download(session: Session, url: str, path: Path) -> None:
         total = int(total)
         block = 1 << 20
 
-        with tqdm(total=total, unit="B", unit_scale=True, leave=False) as bar:
-            with path.open("wb") as f:
-                for data in response.iter_content(block):
-                    _ = bar.update(len(data))
-                    _ = f.write(data)
+        with tqdm(total=total, unit="B", unit_scale=True, leave=False) as bar, path.open("wb") as f:
+            for data in response.iter_content(block):
+                _ = bar.update(len(data))
+                _ = f.write(data)
 
     except Exception as e:
         log.error(f"failed to download '{path.name}': {e}; skipped")
@@ -69,7 +70,11 @@ def drive() -> Drive:
     g: Callable[[Session, Da], None] = lambda x, y: cast("None", x.cookies.set(y["name"], y["value"]))  # pyright: ignore[reportUnknownMemberType]
 
     try:
-        driver = Chrome(ChromeOptions())
+        options = ChromeOptions()
+        if browser := environ.get("LECCAPER_CHROME_BINARY"):
+            options.binary_location = browser
+        service = Service(executable_path=environ.get("LECCAPER_CHROMEDRIVER"))
+        driver = Chrome(options=options, service=service)
         driver.get(leccap)
 
         _ = input(

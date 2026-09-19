@@ -3,6 +3,8 @@
   python314,
   makeWrapper,
   coreutils,
+  chromium,
+  chromedriver,
   dash,
   fdupes,
   ffmpeg,
@@ -25,6 +27,11 @@ python314.pkgs.buildPythonApplication {
   ];
 
   nativeBuildInputs = [ makeWrapper ];
+
+  makeWrapperArgs = [
+    "--set LECCAPER_CHROME_BINARY '${lib.getExe chromium}'"
+    "--set LECCAPER_CHROMEDRIVER '${lib.getExe chromedriver}'"
+  ];
 
   postInstall = ''
     install -Dm755 'bin/vf' "$out/bin/vf"
