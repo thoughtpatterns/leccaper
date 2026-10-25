@@ -38,6 +38,16 @@
             uv
           ];
 
+          nativeBuildInputs = with pkgs; [
+            bash-language-server
+            nil
+            nixfmt
+            ruff
+            shellcheck
+            shfmt
+            ty
+          ];
+
           shellHook = ''
             if ! [ -d .venv ]
             then uv venv -p '${python}/bin/python'
