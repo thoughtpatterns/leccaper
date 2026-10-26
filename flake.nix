@@ -42,11 +42,16 @@
             bash-language-server
             nil
             nixfmt
+            python.pkgs.uv-build
             ruff
             shellcheck
             shfmt
             ty
           ];
+
+          UV_CONFIG_FILE = pkgs.writeText "leccaper-uv.toml" ''
+            no-build-isolation-package = ["leccaper"]
+          '';
 
           shellHook = ''
             if ! [ -d .venv ]
